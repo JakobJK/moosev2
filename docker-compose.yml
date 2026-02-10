@@ -1,0 +1,26 @@
+services:
+  api:
+    build:
+      context: ./packages/api
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./packages/www
+    ports:
+      - "5173:5173"
+    environment:
+      # Use localhost:8080 if the browser is making the calls.
+      # Use http://api:8080 ONLY if doing Server Side Rendering (SSR).
+      - VITE_API_URL=http://localhost:8080
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
