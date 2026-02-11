@@ -1,18 +1,16 @@
-# Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine
+
 WORKDIR /app
 
-# This now only copies files from packages/api 
-# because that is our build context
-COPY . .
+# Install 'Air' for hot reloading
+RUN go install github.com/air-verse/air@latest
 
-# Now 'go build .' works because main.go is in the root of the context
-RUN go mod init myapi && go mod tidy
-RUN go build -o main .
+# Copy modules first for faster caching
+COPY go.mod go.sum* ./
+RUN go mod download
 
-# Run stage
-FROM alpine:latest
-WORKDIR /root/
-COPY --from=builder /app/main .
+# We don't COPY . . because we will mount it via volume
 EXPOSE 8080
-CMD ["./main"]
+
+# Run Air to watch and compile code for Linux
+CMD ["air"]

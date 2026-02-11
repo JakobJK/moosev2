@@ -4,6 +4,9 @@ services:
       context: ./packages/api
     ports:
       - "8080:8080"
+    volumes:
+      - ./packages/api:/app  # Map the API source code
+      - pkg_cache:/go/pkg    # Optional: Cache Go modules for speed
     networks:
       - app-network
 
@@ -12,10 +15,12 @@ services:
       context: ./packages/www
     ports:
       - "5173:5173"
+    volumes:
+      - ./packages/www:/app
+      - /app/node_modules    # Shield node_modules from Windows
     environment:
-      # Use localhost:8080 if the browser is making the calls.
-      # Use http://api:8080 ONLY if doing Server Side Rendering (SSR).
       - VITE_API_URL=http://localhost:8080
+      - NODE_ENV=development
     depends_on:
       - api
     networks:
@@ -24,3 +29,6 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  pkg_cache:

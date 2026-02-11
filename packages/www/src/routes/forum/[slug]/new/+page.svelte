@@ -1,112 +1,84 @@
 <script lang="ts">
-    import { onMount, onDestroy } from "svelte";
-    import { Editor } from "@tiptap/core";
-    import StarterKit from "@tiptap/starter-kit";
-    import Placeholder from "@tiptap/extension-placeholder";
+  import Chapter from '$lib/components/Chapter.svelte'
+  let { data } = $props()
 
-    let { data } = $props();
+  const BW = 200 // Minimum Width
+  const VGAP = 100
+  const HGAP = 40
 
-    let element = $state<HTMLDivElement>();
-    let editor = $state<Editor>();
-    let title = $state("");
+  let transform = $state({ x: 500, y: 100 })
+  let isPanning = $state(false)
 
-    onMount(() => {
-        editor = new Editor({
-            element: element,
-            extensions: [
-                StarterKit,
-                Placeholder.configure({
-                    placeholder:
-                        "What are you working on? (Markdown supported...)",
-                }),
-            ],
-            editorProps: {
-                attributes: {
-                    class: "prose prose-invert max-w-none focus:outline-none min-h-[300px] p-6 text-slate-300",
-                },
-            },
-            onTransaction: () => {
-                editor = editor;
-            },
-        });
-    });
+  // 1. We still need the math to know where to place the ForeignObjects
+  function getNodeWidth(node): number {
+    if (!node.children || node.children.length === 0) return BW
+    const childrenWidth = node.children.reduce(
+      (acc, child) => acc + getNodeWidth(child),
+      0
+    )
+    const gaps = (node.children.length - 1) * HGAP
+    return Math.max(BW, childrenWidth + gaps)
+  }
 
-    onDestroy(() => {
-        if (editor) editor.destroy();
-    });
+  function getChildX(parentX, parentNode, childIndex) {
+    const totalChildrenWidth =
+      parentNode.children.reduce((acc, child) => acc + getNodeWidth(child), 0) +
+      (parentNode.children.length - 1) * HGAP
 
-    const formatSlug = (slug: string) => slug.replace(/-/g, " ");
+    let startX = parentX + BW / 2 - totalChildrenWidth / 2
+    let offset = 0
+    for (let i = 0; i < childIndex; i++) {
+      offset += getNodeWidth(parentNode.children[i]) + HGAP
+    }
+
+    return (
+      startX +
+      offset +
+      getNodeWidth(parentNode.children[childIndex]) / 2 -
+      BW / 2
+    )
+  }
 </script>
 
-<div class="max-w-4xl mx-auto p-8">
-    <nav
-        class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4"
-    >
-        <a
-            href="/forum/{data.slug}"
-            class="hover:text-blue-500 transition-colors"
-            >Back to {formatSlug(data.slug)}</a
-        >
-    </nav>
+{#snippet renderNode(node, x, y)}
+  {#if node.children}
+    {#each node.children as child, i}
+      {@const childX = getChildX(x, node, i)}
+      {@const childY = y + VGAP}
+      <path
+        d="M {x + BW / 2} {y} 
+           C {x + BW / 2} {y + VGAP / 2}, 
+             {childX + BW / 2} {childY - VGAP / 2}, 
+             {childX + BW / 2} {childY}"
+        fill="none"
+        stroke="#334155"
+        stroke-width="2"
+      />
+      {@render renderNode(child, childX, childY)}
+    {/each}
+  {/if}
 
-    <h1 class="text-4xl font-black text-white mb-8">Create New Thread</h1>
+  <foreignObject {x} {y} width={BW} height="500" class="overflow-visible">
+    <Chapter {node} />
+  </foreignObject>
+{/snippet}
 
-    <div class="space-y-6">
-        <input
-            bind:value={title}
-            placeholder="Thread Title"
-            class="w-full bg-slate-900 border border-slate-800 rounded-xl p-5 text-2xl font-bold text-white focus:outline-none focus:border-blue-500 transition-all shadow-inner"
-        />
-
-        <div
-            class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl"
-        >
-            <div
-                class="bg-slate-950/50 border-b border-slate-800 p-2 flex gap-1"
-            >
-                <button
-                    onclick={() => editor?.chain().focus().toggleBold().run()}
-                    class="p-2 px-3 rounded hover:bg-slate-800 transition-colors {editor?.isActive(
-                        'bold',
-                    )
-                        ? 'text-blue-400 bg-slate-800'
-                        : 'text-slate-500'}"
-                >
-                    <b>B</b>
-                </button>
-                <button
-                    onclick={() =>
-                        editor?.chain().focus().toggleCodeBlock().run()}
-                    class="p-2 px-3 rounded hover:bg-slate-800 transition-colors {editor?.isActive(
-                        'codeBlock',
-                    )
-                        ? 'text-blue-400 bg-slate-800'
-                        : 'text-slate-500'}"
-                >
-                    <span class="font-mono text-sm">{"<>"}</span>
-                </button>
-            </div>
-
-            <div bind:this={element}></div>
-        </div>
-
-        <div class="flex justify-end gap-4">
-            <button
-                class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-3 rounded-xl font-black shadow-lg shadow-blue-900/40 transition-all active:scale-95"
-                onclick={() => console.log(editor?.getJSON())}
-            >
-                Post Thread
-            </button>
-        </div>
-    </div>
-</div>
-
-<style>
-    :global(.tiptap p.is-editor-empty:first-child::before) {
-        color: #475569;
-        content: attr(data-placeholder);
-        float: left;
-        height: 0;
-        pointer-events: none;
+<div
+  class="w-full h-screen bg-slate-950 overflow-hidden cursor-grab active:cursor-grabbing"
+  onmousedown={() => (isPanning = true)}
+  onmousemove={(e) => {
+    if (isPanning) {
+      transform.x += e.movementX
+      transform.y += e.movementY
     }
-</style>
+  }}
+  onmouseup={() => (isPanning = false)}
+  onmouseleave={() => (isPanning = false)}
+  role="presentation"
+>
+  <svg class="w-full h-full">
+    <g transform="translate({transform.x}, {transform.y})">
+      {@render renderNode(data.tree, 0, 0)}
+    </g>
+  </svg>
+</div>
