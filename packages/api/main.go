@@ -1,6 +1,7 @@
 package main
 
 import (
+	"moose-api/handlers"
 	"net/http"
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +20,7 @@ func main() {
 	{
 		users.GET("/", getUsers)          // List users (Paginated)
 		users.POST("/", createUser)       // Register
-		users.GET("/:id", getUserByID)    // Profile
+		users.GET("/:username", handlers.GetUserProfile)
 		users.DELETE("/:id", deleteUser)  // Delete
 	}
 

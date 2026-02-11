@@ -1,23 +1,46 @@
 services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=moose
+      - POSTGRES_PASSWORD=moose
+      - POSTGRES_DB=moose_db
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
   api:
     build:
       context: ./packages/api
     ports:
       - "8080:8080"
     volumes:
-      - ./packages/api:/app  # Map the API source code
-      - pkg_cache:/go/pkg    # Optional: Cache Go modules for speed
+      - ./packages/api:/app
+      - /app/tmp 
+      - pkg_cache:/go/pkg 
+    working_dir: /app
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=moose
+      - DB_PASSWORD=moose
+      - DB_NAME=moose_db
+    depends_on:
+      - db
     networks:
       - app-network
-
   frontend:
     build:
       context: ./packages/www
     ports:
       - "5173:5173"
     volumes:
-      - ./packages/www:/app
-      - /app/node_modules    # Shield node_modules from Windows
+      - ./packages/www:/app:Z
+      - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8080
       - NODE_ENV=development
@@ -32,3 +55,4 @@ networks:
 
 volumes:
   pkg_cache:
+  db_data: 
