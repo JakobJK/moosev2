@@ -1,37 +1,64 @@
 package handlers
 
 import (
+	"moose-api/db_gen"
 	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 )
 
-type UserProfile struct {
-	Username       string   `json:"username"`
-	Bio            string   `json:"bio"`
-	AvatarURL      *string  `json:"avatarUrl"`
-	JoinedDate     string   `json:"joinedDate"`
-	Posts          int      `json:"posts"`      // Moved to top level
-	Topics         int      `json:"topics"`     // Moved to top level
-	Reputation     int      `json:"reputation"` // Moved to top level
-	RecentActivity []string `json:"recentActivity"`
+type UserHandler struct {
+	Queries *db_gen.Queries
 }
 
-func GetUserProfile(c *gin.Context) {
-	username := c.Param("username")
+// GET /users/:username
+func (h *UserHandler) GetUserProfile(c *gin.Context) {
+	username := strings.TrimSpace(c.Param("username"))
 
-	profile := UserProfile{
-		Username:       username,
-		Bio:            "3D Environment Artist specializing in modular workflows and trim sheets.",
-		AvatarURL:      nil,
-		JoinedDate:     "2024-11-12",
-		Posts:          154,
-		Topics:         12,
-		Reputation:     850,
-		RecentActivity: []string{
-			"Low Poly Sci-Fi Door (WIP) - 2 hours ago",
-			"Modular Building Kit (Showcase) - 3 days ago",
-		},
+	user, err := h.Queries.GetUserByUsername(c.Request.Context(), username)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
 	}
 
-	c.JSON(http.StatusOK, profile)
+	c.JSON(http.StatusOK, user)
 }
+
+// GET /users
+func (h *UserHandler) ListUsers(c *gin.Context) {
+	users, err := h.Queries.ListUsers(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
+
+func (h *UserHandler) CreateUser(c *gin.Context) {
+	var params db_gen.CreateUserParams
+	if err := c.ShouldBindJSON(&params); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := h.Queries.CreateUser(c.Request.Context(), params)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+	c.JSON(http.StatusCreated, user)
+}
+
+// DELETE /users/:id
+func (h *UserHandler) DeleteUser(c *gin.Context) {
+	// Implementation depends on your sqlc DeleteUser query
+	c.Status(http.StatusNoContent)
+}
+
+// --- Status & Placeholder Handlers ---
+
+func GetStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "online"})
+}
+

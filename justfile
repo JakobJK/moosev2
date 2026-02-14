@@ -25,4 +25,15 @@ logs-api:
 # --- DATABASE COMMANDS ---
 
 db:
-    $env:PGPASSWORD='moose'; pgcli -h localhost -p 5432 -u moose -d moose_db
+    $env:PGPASSWORD='moose'; pgcli -h 127.0.0.1 -p 5432 -u moose -d moose_db
+
+create-migration name:
+    docker-compose run --rm --entrypoint migrate migrate create -ext sql -dir ./migrations -seq {{name}}
+
+# Run migrations
+migrate:
+    docker-compose run --rm migrate
+
+# Generate sqlc code using Docker
+sqlc:
+    docker-compose run --rm api sqlc generate

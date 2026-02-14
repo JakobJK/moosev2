@@ -13,16 +13,30 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - app-network
+  migrate:
+    image: migrate/migrate
+    profiles:
+      - tools
+    volumes:
+      - ./packages/db/migrations:/migrations
+    networks:
+      - app-network
+    command:
+      - -path=/migrations/
+      - -database=postgres://moose:moose@db:5432/moose_db?sslmode=disable
+      - up
   api:
     build:
       context: ./packages/api
     ports:
       - "8080:8080"
     volumes:
-      - ./packages/api:/app
-      - /app/tmp 
+      - ./packages/api:/app/packages/api
+      - ./packages/db:/app/packages/db
+      - /app/packages/api/tmp # Anonymous volume for hot-reload tmp files
       - pkg_cache:/go/pkg 
-    working_dir: /app
+   
+    working_dir: /app/packages/api
     environment:
       - DB_HOST=db
       - DB_PORT=5432
@@ -33,9 +47,11 @@ services:
       - db
     networks:
       - app-network
+
   frontend:
     build:
       context: ./packages/www
+    working_dir: /app
     ports:
       - "5173:5173"
     volumes:
@@ -44,10 +60,24 @@ services:
     environment:
       - VITE_API_URL=http://localhost:8080
       - NODE_ENV=development
+    command: npm run dev -- --host 0.0.0.0
     depends_on:
       - api
     networks:
       - app-network
+
+  storybook:
+    build:
+      context: ./packages/www
+    working_dir: /app
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./packages/www:/app:Z
+      - /app/node_modules
+    networks:
+      - app-network
+    command: npm run storybook -- --host 0.0.0.0
 
 networks:
   app-network:
@@ -55,4 +85,4 @@ networks:
 
 volumes:
   pkg_cache:
-  db_data: 
+  db_data:
