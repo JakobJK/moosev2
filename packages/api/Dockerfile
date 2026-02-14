@@ -1,6 +1,7 @@
 FROM golang:1.25-alpine
 
 WORKDIR /app
+RUN apk add --no-cache git build-base
 
 # Install 'Air' for hot reloading
 RUN go install github.com/air-verse/air@latest
