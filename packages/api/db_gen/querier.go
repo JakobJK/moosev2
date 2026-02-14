@@ -12,6 +12,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetUser(ctx context.Context, id int32) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	ListForums(ctx context.Context) ([]LidtForumsRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 }
 

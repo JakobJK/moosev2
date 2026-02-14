@@ -1,21 +1,20 @@
 package database
 
 import (
-	"database/sql"
-	"log"
-	"moose-api/db_gen"
-
-	_ "github.com/lib/pq"
+	"context"
+	"github.com/jackc/pgx/v5/pgxpool" // Use this instead of database/sql
 )
 
-func Init() (*db_gen.Queries, *sql.DB) {
-	connStr := "postgres://moose:moose@db:5432/moose_db?sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
+func ConnectDB(ctx context.Context, connStr string) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		return nil, err
 	}
-	return db_gen.New(db), db
+
+	return pool, nil
 }

@@ -1,19 +1,31 @@
 package main
 
 import (
+	"context"             // Added
 	"moose-api/database"
+	"moose-api/db_gen"     // Added
 	"moose-api/handlers"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 1. Initialize DB and get sqlc queries
-	queries, dbConn := database.Init()
-	defer dbConn.Close()
+	// Capitalize Background
+	ctx := context.Background() 
+	
+	// Capitalize ConnectDB and Close
+	pool, err := database.ConnectDB(ctx, "postgres://moose:moose@db:5432/moose_db?sslmode=disable")
+	if err != nil {
+		panic(err)
+	}
+	defer pool.Close()
 
-	// 2. Inject queries into handlers
+	// Capitalize New
+	queries := db_gen.New(pool)
+
+	// Capitalize struct names and fields
 	userHandler := &handlers.UserHandler{Queries: queries}
+	forumHandler := &handlers.ForumHandler{Queries: queries} 
 
 	r := gin.Default()
 
@@ -30,10 +42,10 @@ func main() {
 
 	forums := r.Group("/forums")
 	{
-		forums.GET("/", handlers.GetForums)
-		forums.POST("/", handlers.CreateForum)
-		forums.GET("/:id/threads", handlers.GetThreadsByForum)
-		forums.POST("/:id/threads", handlers.CreateThread)
+		forums.GET("/", forumHandler.GetForums)
+		forums.POST("/", forumHandler.CreateForum)
+		forums.GET("/:id/threads", forumHandler.GetThreadsByForum)
+		forums.POST("/:id/threads", forumHandler.CreateThread)
 	}
 
 	r.Run(":8080")

@@ -5,12 +5,47 @@
 package db_gen
 
 import (
-	"time"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Category struct {
+	ID        int32  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sortOrder"`
+}
+
+type Forum struct {
+	ID          int32  `json:"id"`
+	CategoryID  int32  `json:"categoryId"`
+	Slug        string `json:"slug"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	TopicCount  int32  `json:"topicCount"`
+	PostCount   int32  `json:"postCount"`
+}
+
+type Post struct {
+	ID        int32              `json:"id"`
+	ThreadID  int32              `json:"threadId"`
+	UserID    int32              `json:"userId"`
+	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+}
+
+type Thread struct {
+	ID        int32              `json:"id"`
+	ForumID   int32              `json:"forumId"`
+	UserID    int32              `json:"userId"`
+	Title     string             `json:"title"`
+	Slug      string             `json:"slug"`
+	IsPinned  bool               `json:"isPinned"`
+	IsLocked  bool               `json:"isLocked"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+}
+
 type User struct {
-	ID        int32     `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID        int32              `json:"id"`
+	Username  string             `json:"username"`
+	Email     string             `json:"email"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
 }
