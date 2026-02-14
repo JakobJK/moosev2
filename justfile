@@ -5,7 +5,6 @@ default:
     @just --list
 
 # --- DOCKER COMMANDS ---
-
 # Spin up the whole stack (Go API, Postgres, SvelteKit)
 up:
     docker-compose up --build
@@ -18,12 +17,8 @@ down:
 rebuild:
     docker-compose up --build --force-recreate
 
-# View logs for the API specifically
-logs-api:
-    docker logs -f moosev2-api
 
 # --- DATABASE COMMANDS ---
-
 db:
     $env:PGPASSWORD='moose'; pgcli -h 127.0.0.1 -p 5432 -u moose -d moose_db
 
@@ -34,6 +29,8 @@ create-migration name:
 migrate:
     docker-compose run --rm migrate
 
-# Generate sqlc code using Docker
+# --- API COMMANDS --- 
+
+# Generate Go functions for SQL queries
 sqlc:
     docker-compose run --rm api sqlc generate
