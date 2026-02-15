@@ -1,3 +1,7 @@
+# -- nginx
+docker/nginx/certs/*
+!docker/nginx/certs/.gitkeep
+
 # --- Node.js / Frontend ---
 node_modules/
 npm-debug.log*

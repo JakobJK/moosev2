@@ -34,3 +34,8 @@ migrate:
 # Generate Go functions for SQL queries
 sqlc:
     docker-compose run --rm api sqlc generate
+
+# Generate https certs
+certs:
+    mkcert -cert-file docker/nginx/certs/moose.dev.pem -key-file docker/nginx/certs/moose.dev-key.pem moose.dev api.moose.dev storybook.moose.dev localhost 127.0.0.1
+    docker-compose exec nginx nginx -s reload

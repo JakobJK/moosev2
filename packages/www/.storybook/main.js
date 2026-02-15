@@ -4,6 +4,6 @@ const config = {
     stories: ["../src/**/*.stories.@(js|ts|svelte)"],
     addons: ["@storybook/addon-svelte-csf"],
     framework: "@storybook/sveltekit",
-    staticDirs: ['../static']
+    staticDirs: ['../static'],
 };
 export default config;

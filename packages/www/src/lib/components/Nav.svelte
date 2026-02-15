@@ -9,7 +9,6 @@
     <a href="/forum" class="hover:text-blue-400">Forum</a>
     <a href="/about" class="hover:text-blue-400">About</a>
   </div>
-
   <div class="flex gap-4">
     <a
       href="/login"

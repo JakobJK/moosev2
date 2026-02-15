@@ -32,7 +32,8 @@ services:
   api:
     build:
       context: ./packages/api
-    # ports: - "8080:8080" # Optional: remove to force traffic through Nginx
+    ports: 
+      - "8080:8080"
     volumes:
       - ./packages/api:/app/packages/api
       - ./packages/db:/app/packages/db
@@ -65,22 +66,36 @@ services:
     build:
       context: ./packages/www
     working_dir: /app
-    # ports: - "5173:5173" # Optional: remove
+    ports: 
+      - "5173:5173"
     volumes:
       - ./packages/www:/app:Z
       - /app/node_modules
     environment:
-      # Change this to your new domain
       - VITE_API_URL=https://api.moose.dev
       - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true # Helps with file watching on Windows
+      - VITE_HOST=0.0.0.0
     command: npm run dev -- --host 0.0.0.0
     depends_on:
       - api
     networks:
       - app-network
-
-  # ... migrate and storybook remain largely the same, 
-  # but ensure they are on app-network ...
+  storybook:
+    build:
+      context: ./packages/www
+    working_dir: /app
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./packages/www:/app:Z
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    command: npm run storybook -- --host 0.0.0.0 --port 6006
+    networks:
+      - app-network
 
 networks:
   app-network:
