@@ -19,7 +19,8 @@ export default defineConfig({
         ],
         // This ensures Hot Module Replacement (HMR) works over SSL via Nginx
         hmr: {
-            clientPort: 443
+            clientPort: 443,
+            protocol: 'wss'
         },
         // Fix for Windows/WSL2/Podman not detecting file changes
         watch: {

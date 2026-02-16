@@ -1,5 +1,4 @@
 # Default command: show help
-set shell := ["powershell.exe", "-Command"]
 
 default:
     @just --list
@@ -18,9 +17,9 @@ rebuild:
     docker-compose up --build --force-recreate
 
 
-# --- DATABASE COMMANDS ---
+## Open interactive shell (using local pgcli)
 db:
-    $env:PGPASSWORD='moose'; pgcli -h 127.0.0.1 -p 5432 -u moose -d moose_db
+    pgcli postgres://moose:moose@127.0.0.1:5432/moose_db
 
 create-migration name:
     docker-compose run --rm --entrypoint migrate migrate create -ext sql -dir ./migrations -seq {{name}}
@@ -28,6 +27,11 @@ create-migration name:
 # Run migrations
 migrate:
     docker-compose run --rm migrate
+# Wipe the entire database schema (Roll back everything)
+migrate-down:
+    docker-compose run --rm migrate -path=/migrations/ -database="postgres://moose:moose@db:5432/moose_db?sslmode=disable" drop -f
+seed:
+    docker-compose exec -T db psql "postgres://moose:moose@localhost:5432/moose_db" < ./packages/db/mockdata/0001.sql
 
 # --- API COMMANDS --- 
 
@@ -38,4 +42,4 @@ sqlc:
 # Generate https certs
 certs:
     mkcert -cert-file docker/nginx/certs/moose.dev.pem -key-file docker/nginx/certs/moose.dev-key.pem moose.dev api.moose.dev storybook.moose.dev localhost 127.0.0.1
-    docker-compose exec nginx nginx -s reload
+

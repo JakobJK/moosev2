@@ -11,6 +11,43 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getForumBySlug = `-- name: GetForumBySlug :one
+SELECT id, category_id, slug, title, description, topic_count, post_count FROM forums WHERE slug = $1 LIMIT 1
+`
+
+func (q *Queries) GetForumBySlug(ctx context.Context, slug string) (Forum, error) {
+	row := q.db.QueryRow(ctx, getForumBySlug, slug)
+	var i Forum
+	err := row.Scan(
+		&i.ID,
+		&i.CategoryID,
+		&i.Slug,
+		&i.Title,
+		&i.Description,
+		&i.TopicCount,
+		&i.PostCount,
+	)
+	return i, err
+}
+
+const incrementReplyCount = `-- name: IncrementReplyCount :exec
+UPDATE threads 
+SET 
+    replies_count = replies_count + 1,
+    last_post_id = $1 
+WHERE id = $2
+`
+
+type IncrementReplyCountParams struct {
+	LastPostID *int32 `json:"lastPostId"`
+	ID         int32  `json:"id"`
+}
+
+func (q *Queries) IncrementReplyCount(ctx context.Context, arg IncrementReplyCountParams) error {
+	_, err := q.db.Exec(ctx, incrementReplyCount, arg.LastPostID, arg.ID)
+	return err
+}
+
 const listForums = `-- name: ListForums :many
 WITH latest_posts AS (
     SELECT DISTINCT ON (t.forum_id)
@@ -87,6 +124,64 @@ func (q *Queries) ListForums(ctx context.Context) ([]ListForumsRow, error) {
 			&i.LastPostUsername,
 			&i.LastPostUserID,
 			&i.LastPostCreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listThreadsByForum = `-- name: ListThreadsByForum :many
+SELECT 
+    t.id, 
+    t.title, 
+    t.slug,
+    t.is_pinned,
+    u.username AS author, 
+    t.replies_count,
+    lp.created_at AS last_post_at,
+    lpu.username AS last_post_author
+FROM threads t
+JOIN users u ON t.user_id = u.id
+LEFT JOIN posts lp ON t.last_post_id = lp.id
+LEFT JOIN users lpu ON lp.user_id = lpu.id
+WHERE t.forum_id = $1
+ORDER BY t.is_pinned DESC, COALESCE(lp.created_at, t.created_at) DESC
+`
+
+type ListThreadsByForumRow struct {
+	ID             int32              `json:"id"`
+	Title          string             `json:"title"`
+	Slug           string             `json:"slug"`
+	IsPinned       bool               `json:"isPinned"`
+	Author         string             `json:"author"`
+	RepliesCount   int32              `json:"repliesCount"`
+	LastPostAt     pgtype.Timestamptz `json:"lastPostAt"`
+	LastPostAuthor *string            `json:"lastPostAuthor"`
+}
+
+func (q *Queries) ListThreadsByForum(ctx context.Context, forumID int32) ([]ListThreadsByForumRow, error) {
+	rows, err := q.db.Query(ctx, listThreadsByForum, forumID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListThreadsByForumRow
+	for rows.Next() {
+		var i ListThreadsByForumRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Slug,
+			&i.IsPinned,
+			&i.Author,
+			&i.RepliesCount,
+			&i.LastPostAt,
+			&i.LastPostAuthor,
 		); err != nil {
 			return nil, err
 		}

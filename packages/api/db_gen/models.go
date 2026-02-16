@@ -30,22 +30,27 @@ type Post struct {
 	UserID    int32              `json:"userId"`
 	Content   string             `json:"content"`
 	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
 }
 
 type Thread struct {
-	ID        int32              `json:"id"`
-	ForumID   int32              `json:"forumId"`
-	UserID    int32              `json:"userId"`
-	Title     string             `json:"title"`
-	Slug      string             `json:"slug"`
-	IsPinned  bool               `json:"isPinned"`
-	IsLocked  bool               `json:"isLocked"`
-	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+	ID           int32              `json:"id"`
+	ForumID      int32              `json:"forumId"`
+	UserID       int32              `json:"userId"`
+	Title        string             `json:"title"`
+	Slug         string             `json:"slug"`
+	IsPinned     bool               `json:"isPinned"`
+	IsLocked     bool               `json:"isLocked"`
+	RepliesCount int32              `json:"repliesCount"`
+	LastPostID   *int32             `json:"lastPostId"`
+	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt    pgtype.Timestamptz `json:"updatedAt"`
 }
 
 type User struct {
-	ID        int32              `json:"id"`
-	Username  string             `json:"username"`
-	Email     string             `json:"email"`
-	CreatedAt pgtype.Timestamptz `json:"createdAt"`
+	ID           int32              `json:"id"`
+	Username     string             `json:"username"`
+	Email        string             `json:"email"`
+	PasswordHash string             `json:"passwordHash"`
+	CreatedAt    pgtype.Timestamptz `json:"createdAt"`
 }

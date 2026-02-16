@@ -10,9 +10,12 @@ import (
 
 type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetForumBySlug(ctx context.Context, slug string) (Forum, error)
 	GetUser(ctx context.Context, id int32) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	IncrementReplyCount(ctx context.Context, arg IncrementReplyCountParams) error
 	ListForums(ctx context.Context) ([]ListForumsRow, error)
+	ListThreadsByForum(ctx context.Context, forumID int32) ([]ListThreadsByForumRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 }
 

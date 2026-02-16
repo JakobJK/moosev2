@@ -31,3 +31,30 @@ FROM categories c
 LEFT JOIN forums f ON c.id = f.category_id
 LEFT JOIN latest_posts lp ON f.id = lp.forum_id
 ORDER BY c.sort_order, f.id;
+
+-- name: GetForumBySlug :one
+SELECT * FROM forums WHERE slug = $1 LIMIT 1;
+
+-- name: ListThreadsByForum :many
+SELECT 
+    t.id, 
+    t.title, 
+    t.slug,
+    t.is_pinned,
+    u.username AS author, 
+    t.replies_count,
+    lp.created_at AS last_post_at,
+    lpu.username AS last_post_author
+FROM threads t
+JOIN users u ON t.user_id = u.id
+LEFT JOIN posts lp ON t.last_post_id = lp.id
+LEFT JOIN users lpu ON lp.user_id = lpu.id
+WHERE t.forum_id = $1
+ORDER BY t.is_pinned DESC, COALESCE(lp.created_at, t.created_at) DESC;
+
+-- name: IncrementReplyCount :exec
+UPDATE threads 
+SET 
+    replies_count = replies_count + 1,
+    last_post_id = $1 
+WHERE id = $2;
